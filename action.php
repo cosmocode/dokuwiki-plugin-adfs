@@ -58,11 +58,12 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin {
     }
 
     public function handle_loginform(&$event, $param) {
+        global $ID;
         global $conf;
         if($conf['authtype'] != 'adfs') return;
 
         $event->data = new Doku_Form(array());
-        $event->data->addElement('<a href="'.wl('',array('do' => 'login')).'">Login here</a>');
+        $event->data->addElement('<a href="'.wl($ID,array('do' => 'login')).'">Login here</a>');
     }
 
 }

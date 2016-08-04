@@ -53,6 +53,8 @@ class auth_plugin_adfs extends auth_plugin_authplain {
         global $ACT;
         global $conf;
 
+        if(empty($ID)) $ID = getID();
+
         // trust session info, no need to recheck
         if(isset($_SESSION[DOKU_COOKIE]['auth']) &&
             $_SESSION[DOKU_COOKIE]['auth']['buid'] == auth_browseruid() &&
