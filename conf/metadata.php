@@ -5,3 +5,4 @@
 
 $meta['endpoint']    = array('string');
 $meta['certificate'] = array('');
+$meta['lowercase']   = array('onoff');

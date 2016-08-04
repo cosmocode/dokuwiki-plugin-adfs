@@ -147,7 +147,11 @@ class auth_plugin_adfs extends auth_plugin_authplain {
                      ':' => ''
                  )
         );
-        return utf8_strtolower($user);
+        if($this->getConf('lowercase')) {
+            return utf8_strtolower($user);
+        } else {
+            return $user;
+        }
     }
 
     function cleanGroup($group) {
