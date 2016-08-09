@@ -5,3 +5,4 @@
 
 $conf['endpoint']  = '';
 $conf['certificate'] = '';
+$conf['lowercase'] = 1;
