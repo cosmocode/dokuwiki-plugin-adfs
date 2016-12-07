@@ -78,35 +78,57 @@ class auth_plugin_adfs extends auth_plugin_authplain {
             $samlresponse = new SamlResponse($this->settings, $_POST['SAMLResponse']);
             try {
                 if($samlresponse->is_valid()) {
-                    $_SERVER['REMOTE_USER']                = $samlresponse->get_attribute('login');
-                    $USERINFO['user']                      = $_SERVER['REMOTE_USER'];
-                    $USERINFO['name']                      = $samlresponse->get_attribute('fullname');
-                    $USERINFO['mail']                      = $samlresponse->get_attribute('email');
-                    $USERINFO['grps']                      = (array) $samlresponse->get_attribute('groups');
-                    $USERINFO['grps'][]                    = $conf['defaultgroup'];
-                    $USERINFO['grps']                      = array_map(array($this, 'cleanGroup'), $USERINFO['grps']);
+                    // Always read the userid from the saml response
+                    $_SERVER['REMOTE_USER'] = $samlresponse->get_attribute($this->getConf('userid_attr_name'));
+                    $USERINFO['user'] = $_SERVER['REMOTE_USER'];
+                    
+                    if($this->getConf('autoprovisioning')){
+                        // In case of auto-provisionning we override the local DB info with those retrieve during the SAML negociation
+                        $USERINFO['name'] = $samlresponse->get_attribute($this->getConf('fullname_attr_name'));
+                        $USERINFO['mail'] = $samlresponse->get_attribute($this->getConf('email_attr_name'));
+                        $USERINFO['grps'] = array();
+                        if($this->getConf('groups_attr_name') != "")
+                            $USERINFO['grps'] = (array) $samlresponse->get_attribute($this->getConf('groups_attr_name'));
+                        $USERINFO['grps'][] = $conf['defaultgroup'];
+                        $USERINFO['grps'] = array_map(array(
+                                $this,
+                                'cleanGroup'
+                        ), $USERINFO['grps']);
+                        
+                        // cache user data
+                        $changes = array(
+                                'user'=>$USERINFO['user'],
+                                'name'=>$USERINFO['name'],
+                                'mail'=>$USERINFO['mail'],
+                                'grps'=>$USERINFO['grps']
+                        );
+                        
+                        if($this->triggerUserMod('modify', array(
+                                $USERINFO['user'],
+                                $changes
+                        )) === false){
+                            $this->triggerUserMod('create', array(
+                                    $USERINFO['user'],
+                                    "\0\0nil\0\0",
+                                    $USERINFO['name'],
+                                    $USERINFO['mail'],
+                                    $USERINFO['grps']
+                            ));
+                        }
+                    }else{
+                        // In case the autoprovisionning is disabled we rely on the local DB for the info such as the group and the fullname.
+                        // It also means that the user should exists already in the DB
+                        $dbUserInfo = $this->getUserData($USERINFO['user']);
+                        $USERINFO['name'] = $dbUserInfo["name"];
+                        $USERINFO['mail'] = $dbUserInfo["mail"];
+                        $USERINFO['grps'] = $dbUserInfo["grps"];
+                    }
+                    
+                    // Store that in the cookie
                     $_SESSION[DOKU_COOKIE]['auth']['user'] = $_SERVER['REMOTE_USER'];
                     $_SESSION[DOKU_COOKIE]['auth']['info'] = $USERINFO;
-                    $_SESSION[DOKU_COOKIE]['auth']['buid'] = auth_browseruid(); # cache login
-
-                    // cache user data
-                    $changes = array(
-                        'name' => $USERINFO['name'],
-                        'mail' => $USERINFO['mail'],
-                        'grps' => $USERINFO['grps'],
-                    );
-                    if($this->triggerUserMod('modify', array($user, $changes)) === false) {
-                        $this->triggerUserMod(
-                            'create', array(
-                                        $user,
-                                        "\0\0nil\0\0",
-                                        $USERINFO['name'],
-                                        $USERINFO['mail'],
-                                        $USERINFO['grps']
-                                    )
-                        );
-                    }
-
+                    $_SESSION[DOKU_COOKIE]['auth']['buid'] = auth_browseruid(); // cache login
+                                                                                    
                     // successful login
                     if(isset($_SESSION['adfs_redirect'])) {
                         $go = $_SESSION['adfs_redirect'];
@@ -153,9 +175,7 @@ class auth_plugin_adfs extends auth_plugin_authplain {
             return $user;
         }
     }
-
     function cleanGroup($group) {
         return $this->cleanUser($group);
     }
-
 }
