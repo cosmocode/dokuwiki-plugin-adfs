@@ -4,15 +4,12 @@
  *
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
-
-require_once __DIR__ . '/phpsaml/_toolkit_loader.php';
-require_once __DIR__ . '/phpsaml/compatibility.php';
-
 class auth_plugin_adfs extends auth_plugin_authplain
 {
-
+    /** @var OneLogin_Saml2_Auth the SAML authentication library */
     protected $saml;
 
+    /** @inheritdoc */
     public function __construct()
     {
         parent::__construct();
@@ -27,75 +24,9 @@ class auth_plugin_adfs extends auth_plugin_authplain
         $this->cando['modMail'] = false;
         $this->cando['modGroups'] = false;
 
-
-        // prepare settings object
-
-
-        $this->saml = new OneLogin_Saml2_Auth($this->createSettings());
-
-        //$meta = $ol_auth->getSettings()->getSPMetadata(); // FIXME this needs to go to action
-    }
-
-
-    protected function createSettings()
-    {
-        global $conf;
-
-        $cert = $this->getConf('certificate');
-        $cert = wordwrap($cert, 65, "\n", true);
-        $cert = trim($cert);
-        if (!preg_match('/^-----BEGIN CERTIFICATE-----.*-----END CERTIFICATE-----$/s', $cert)) {
-            $cert = "-----BEGIN CERTIFICATE-----\n$cert\n-----END CERTIFICATE-----";
-        }
-
-        return [
-            'strict' => false, // FIXME
-            'debug' => true, // FIXME
-            'baseurl' => DOKU_URL . DOKU_SCRIPT,
-
-
-
-            // Our own meta data
-            'sp' => [
-                'entityId' => DOKU_URL,
-                'assertionConsumerService' => [
-                    'url' => DOKU_URL . DOKU_SCRIPT,
-                    'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_POST,
-                ],
-                'attributeConsumingService' => [
-                    'serviceName' => $conf['title'],
-                    "serviceDescription" => $conf['tagline'],
-                    /*  FIXME can we request things here??
-                    "requestedAttributes" => [
-                        [
-                            "name" => "",
-                            "isRequired" => false,
-                            "nameFormat" => "",
-                            "friendlyName" => "",
-                            "attributeValue" => ""
-                        ]
-                    ]
-                    */
-                ],
-                'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_EMAIL_ADDRESS,
-            ],
-
-            // The ADFS server we talk to
-            'idp' => [
-                'entityId' => $this->getConf('endpoint'),
-                'singleSignOnService' => [
-                    'url' => $this->getConf('endpoint'),
-                    'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
-                ],
-                'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_UNSPECIFIED,
-                'x509cert' => $cert,
-            ],
-
-            'security' => [
-                'requestedAuthnContext' => false, // FIXME can we set the right one instead?
-                'wantNameId' => false // FIXME it seems ADFS rejects all the ones we set, so we don't check figure out what exactly this checks
-            ]
-        ];
+        /** @var helper_plugin_adfs $hlp */
+        $hlp = plugin_load('helper', 'adfs');
+        $this->saml = $hlp->getSamlLib();
     }
 
     /**
@@ -108,8 +39,6 @@ class auth_plugin_adfs extends auth_plugin_authplain
         global $USERINFO;
         global $ID;
         global $ACT;
-        global $conf;
-
         if (empty($ID)) $ID = getID();
 
         // trust session info, no need to recheck
@@ -190,10 +119,6 @@ class auth_plugin_adfs extends auth_plugin_authplain
                     $this->logOff();
 
                     msg('ADFS: '.hsc($this->saml->getLastErrorReason()), -1);
-
-                    msg(hsc($this->saml->getLastRequestXML()));
-                    msg(hsc($this->saml->getLastResponseXML()));
-
                     return false;
                 }
             } catch (Exception $e) {
@@ -267,7 +192,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
         foreach ($attributes as $key => $attr) {
             $data = $this->saml->getAttribute($attr);
             if ($data === null) throw new \Exception('SAML Response is missing attribute ' . $attr);
-            $userdata[$key] = $data; // FIXME data is array
+            $userdata[$key] = $data;
         }
 
         // clean up data

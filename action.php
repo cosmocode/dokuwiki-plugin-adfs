@@ -1,69 +1,60 @@
 <?php
-
 /**
  * ADFS SAML authentication plugin
  *
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
-class action_plugin_adfs extends DokuWiki_Action_Plugin {
+class action_plugin_adfs extends DokuWiki_Action_Plugin
+{
 
-    public function register(Doku_Event_Handler $controller) {
+    /** @inheritdoc */
+    public function register(Doku_Event_Handler $controller)
+    {
         $controller->register_hook('ACTION_ACT_PREPROCESS', 'BEFORE', $this, 'handle_request');
         $controller->register_hook('HTML_LOGINFORM_OUTPUT', 'BEFORE', $this, 'handle_loginform');
     }
 
     /**
+     * Send the Federation Metadata about this Service Provider
+     *
      * @param Doku_Event $event
      * @param mixed $param
      */
-    public function handle_request(&$event, $param) {
+    public function handle_request(Doku_Event $event, $param)
+    {
         $act = act_clean($event->data);
-        if($act != 'adfs') return;
+        if ($act != 'adfs') return;
         $event->preventDefault();
         $event->stopPropagation();
 
-        global $conf;
-        $valid    = gmstrftime('%Y-%m-%dT%H:%M:%SZ', strtotime('+4 weeks'));
-        $consumer = DOKU_URL.DOKU_SCRIPT;
+        /** @var helper_plugin_adfs $hlp */
+        $hlp = plugin_load('helper', 'adfs');
+        $saml = $hlp->getSamlLib();
 
-        header('Content-Type: application/samlmetadata+xml');
-        header('Content-Disposition: attachment; filename="saml-metadata.xml"');
-
-        echo '<?xml version="1.0"?>' . DOKU_LF;
-        echo '<EntityDescriptor
-                    xmlns="urn:oasis:names:tc:SAML:2.0:metadata"
-                    entityID="' . DOKU_URL . '"
-                    validUntil="' . $valid . '">' . DOKU_LF;
-        echo '  <SPSSODescriptor
-                      protocolSupportEnumeration="urn:oasis:names:tc:SAML:2.0:protocol"
-                      WantAssertionsSigned="true">' . DOKU_LF;
-        echo '    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:transient</NameIDFormat>' . DOKU_LF;
-        echo '    <NameIDFormat>urn:oasis:names:tc:SAML:2.0:nameid-format:persistent</NameIDFormat>' . DOKU_LF;
-        echo '    <NameIDFormat>urn:oasis:names:tc:SAML:1.1:nameid-format:emailAddress</NameIDFormat>' . DOKU_LF;
-
-        echo '    <AssertionConsumerService
-                        index="1"
-                        isDefault="true"
-                        Binding="urn:oasis:names:tc:SAML:2.0:bindings:HTTP-POST"
-                        Location="' . $consumer . '"/>' . DOKU_LF;
-        echo '  </SPSSODescriptor>' . DOKU_LF;
-
-        echo '  <Organization>' . DOKU_LF;
-        echo '    <OrganizationName xml:lang="' . $conf['lang'] . '">' . hsc($conf['title']) . '</OrganizationName>' . DOKU_LF;
-        echo '    <OrganizationDisplayName xml:lang="' . $conf['lang'] . '">' . hsc($conf['title']) . '</OrganizationDisplayName>' . DOKU_LF;
-        echo '    <OrganizationURL xml:lang="' . $conf['lang'] . '">' . DOKU_URL . '</OrganizationURL>' . DOKU_LF;
-        echo '  </Organization>' . DOKU_LF;
-        echo '</EntityDescriptor>' . DOKU_LF;
-        exit;
+        try {
+            header('Content-Type: application/samlmetadata+xml');
+            header('Content-Disposition: attachment; filename="saml-metadata.xml"');
+            $xml = $saml->getSettings()->getSPMetadata();
+            echo $xml;
+        } catch (Exception $e) {
+            die(hsc($e->getMessage()));
+        }
     }
 
-    public function handle_loginform(&$event, $param) {
+    /**
+     * Disable the login forma and instead use a link to trigger login
+     *
+     * @param Doku_Event $event
+     * @param $param
+     */
+    public function handle_loginform(Doku_Event $event, $param)
+    {
         global $ID;
         global $conf;
-        if($conf['authtype'] != 'adfs') return;
+        if ($conf['authtype'] != 'adfs') return;
 
         $event->data = new Doku_Form(array());
-        $event->data->addElement('<a href="'.wl($ID,array('do' => 'login')).'">Login here</a>');
+        $event->data->addElement('<a href="' . wl($ID, array('do' => 'login')) . '">Login here</a>');
     }
 
 }
