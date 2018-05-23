@@ -81,7 +81,7 @@ class auth_plugin_adfs extends auth_plugin_authplain {
                     // Always read the userid from the saml response
                     $_SERVER['REMOTE_USER'] = $samlresponse->get_attribute($this->getConf('userid_attr_name'));
                     $USERINFO['user'] = $_SERVER['REMOTE_USER'];
-                    
+
                     if($this->getConf('autoprovisioning')){
                         // In case of auto-provisionning we override the local DB info with those retrieve during the SAML negociation
                         $USERINFO['name'] = $samlresponse->get_attribute($this->getConf('fullname_attr_name'));
@@ -94,7 +94,7 @@ class auth_plugin_adfs extends auth_plugin_authplain {
                                 $this,
                                 'cleanGroup'
                         ), $USERINFO['grps']);
-                        
+
                         // cache user data
                         $changes = array(
                                 'user'=>$USERINFO['user'],
@@ -102,7 +102,7 @@ class auth_plugin_adfs extends auth_plugin_authplain {
                                 'mail'=>$USERINFO['mail'],
                                 'grps'=>$USERINFO['grps']
                         );
-                        
+
                         if($this->triggerUserMod('modify', array(
                                 $USERINFO['user'],
                                 $changes
@@ -123,12 +123,12 @@ class auth_plugin_adfs extends auth_plugin_authplain {
                         $USERINFO['mail'] = $dbUserInfo["mail"];
                         $USERINFO['grps'] = $dbUserInfo["grps"];
                     }
-                    
+
                     // Store that in the cookie
                     $_SESSION[DOKU_COOKIE]['auth']['user'] = $_SERVER['REMOTE_USER'];
                     $_SESSION[DOKU_COOKIE]['auth']['info'] = $USERINFO;
                     $_SESSION[DOKU_COOKIE]['auth']['buid'] = auth_browseruid(); // cache login
-                                                                                    
+
                     // successful login
                     if(isset($_SESSION['adfs_redirect'])) {
                         $go = $_SESSION['adfs_redirect'];
@@ -154,11 +154,15 @@ class auth_plugin_adfs extends auth_plugin_authplain {
         return false;
     }
 
-    function logOff() {
+
+
+    /** @inheritdoc */
+    public function logOff() {
         set_doku_pref('adfs_autologin', 0);
     }
 
-    function cleanUser($user) {
+    /** @inheritdoc */
+    public function cleanUser($user) {
         // strip disallowed characters
         $user = strtr(
             $user, array(
@@ -175,7 +179,9 @@ class auth_plugin_adfs extends auth_plugin_authplain {
             return $user;
         }
     }
-    function cleanGroup($group) {
+
+    /** @inheritdoc */
+    public function cleanGroup($group) {
         return $this->cleanUser($group);
     }
 }
