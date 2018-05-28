@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ADFS SAML authentication plugin
  *
@@ -51,18 +52,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
                 ],
                 'attributeConsumingService' => [
                     'serviceName' => $conf['title'],
-                    "serviceDescription" => $conf['tagline'],
-                    /*  FIXME can we request things here??
-                    "requestedAttributes" => [
-                        [
-                            "name" => "",
-                            "isRequired" => false,
-                            "nameFormat" => "",
-                            "friendlyName" => "",
-                            "attributeValue" => ""
-                        ]
-                    ]
-                    */
+                    "serviceDescription" => 'ADFS auth plugin',
                 ],
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_EMAIL_ADDRESS,
             ],
@@ -79,11 +69,17 @@ class helper_plugin_adfs extends auth_plugin_authplain
             ],
 
             'security' => [
-                'requestedAuthnContext' => false, // FIXME can we set the right one instead?
-                'wantNameId' => false // FIXME it seems ADFS rejects all the ones we set, so we don't check figure out what exactly this checks
+                'requestedAuthnContext' => false, // We let the AD decide what kind of authentication it uses
+                'wantNameId' => false // Seems not to work otherwise
             ],
 
-            // FIXME we probably want to set the organization as well
+            'organization' => array(
+                'en-US' => array(
+                    'name' => $conf['title'],
+                    'displayname' => $conf['title'],
+                    'url' => DOKU_URL
+                ),
+            ),
         ];
     }
 }
