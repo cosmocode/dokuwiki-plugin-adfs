@@ -4,10 +4,6 @@
  *
  * @author     Andreas Gohr <gohr@cosmocode.de>
  */
-
-require_once __DIR__ . '/phpsaml/_toolkit_loader.php';
-
-
 class helper_plugin_adfs extends auth_plugin_authplain
 {
     /**
@@ -19,6 +15,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
     {
         static $saml = null;
         if ($saml === null) {
+            require_once __DIR__ . '/phpsaml/_toolkit_loader.php';
             $saml = new OneLogin_Saml2_Auth($this->createSettings());
         }
         return $saml;
