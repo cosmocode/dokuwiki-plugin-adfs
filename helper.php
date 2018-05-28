@@ -7,6 +7,9 @@
  */
 class helper_plugin_adfs extends auth_plugin_authplain
 {
+    /** @var OneLogin_Saml2_Auth */
+    protected $saml;
+
     /**
      * Get the initialized SAML library
      *
@@ -14,12 +17,11 @@ class helper_plugin_adfs extends auth_plugin_authplain
      */
     public function getSamlLib()
     {
-        static $saml = null;
-        if ($saml === null) {
+        if ($this->saml === null) {
             require_once __DIR__ . '/phpsaml/_toolkit_loader.php';
-            $saml = new OneLogin_Saml2_Auth($this->createSettings());
+            $this->saml = new OneLogin_Saml2_Auth($this->createSettings());
         }
-        return $saml;
+        return $this->saml;
     }
 
     /**
