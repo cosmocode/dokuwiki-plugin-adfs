@@ -55,13 +55,14 @@ class helper_plugin_adfs extends auth_plugin_authplain
                 'attributeConsumingService' => [
                     'serviceName' => $conf['title'],
                     "serviceDescription" => 'ADFS auth plugin',
+                    "requestedAttributes" => [],
                 ],
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_EMAIL_ADDRESS,
             ],
 
             // The ADFS server we talk to
             'idp' => [
-                'entityId' => $this->getConf('endpoint'),
+                'entityId' => $this->getConf('idPEntityID'),
                 'singleSignOnService' => [
                     'url' => $this->getConf('endpoint'),
                     'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,

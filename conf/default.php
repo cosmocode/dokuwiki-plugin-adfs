@@ -3,6 +3,7 @@
  * Configuration defaults for ADFS SAML Auth
 */
 
+$conf['idPEntityID'] = 'set me';
 $conf['endpoint']  = '';
 $conf['certificate'] = '';
 $conf['lowercase'] = 1;

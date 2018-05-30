@@ -3,6 +3,7 @@
  * Configuration metadata for ADFS SAML Auth
 */
 
+$meta['idPEntityID'] = array('string');
 $meta['endpoint']    = array('string');
 $meta['certificate'] = array('');
 $meta['lowercase']   = array('onoff');
