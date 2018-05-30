@@ -43,7 +43,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
         return [
             'strict' => true,
             'debug' => false,
-            'baseurl' => DOKU_URL . DOKU_SCRIPT,
+            'baseurl' => DOKU_URL,
 
             // Our own meta data
             'sp' => [
