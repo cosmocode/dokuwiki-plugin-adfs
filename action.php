@@ -36,6 +36,7 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
             header('Content-Disposition: attachment; filename="saml-metadata.xml"');
             $xml = $saml->getSettings()->getSPMetadata();
             echo $xml;
+            exit();
         } catch (Exception $e) {
             die(hsc($e->getMessage()));
         }
