@@ -1,0 +1,7 @@
+====== ADFS Configuration Helper ======
+
+This tool helps you to find the right configuration paramters for the ADSF plugin by parsing the Federation metadata provided by your Identity Provider.
+
+For Active Directory Federation Services the metadata can be found at ''%%https://<your-adfs-server>/FederationMetadata/2007-06/FederationMetadata.xml%%''. Simply paste this URL (with the correct server name) below.
+
+Please note that PHP will check the certificate validity, so if you use a self signed or corporate internal certificate you need to download the file yourself and paste it into the XML field below.

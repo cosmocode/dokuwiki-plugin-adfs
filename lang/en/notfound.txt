@@ -1,0 +1,3 @@
+===== No Data Found =====
+
+No valid configuration data was found. Either you provided the wrong file or the format is different from what we expect. You need to find the right values yourself.

@@ -1,0 +1,3 @@
+===== Data Found =====
+
+Some configuration data was found. Please use the [[?do=admin&page=config#plugin____adfs____plugin_settings_name|Configuration Manager]] to configure the ADFS plugin with these values.

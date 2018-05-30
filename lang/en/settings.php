@@ -3,7 +3,7 @@
  * Configuration texts for ADFS SAML Auth
  */
 
-$meta['idPEntityID'] = 'The ID of your SAML server. Usually <code>http://<i>&lt;yourserver&gt;</i>/adfs/services/trust</code>';
+$lang['idPEntityID'] = 'The ID of your SAML server. Usually <code>http://<i>&lt;yourserver&gt;</i>/adfs/services/trust</code>';
 $lang['endpoint']    = 'The SAML auth API endpoint. Usually <code>https://<i>&lt;yourserver&gt;</i>/adfs/ls/</code>';
 $lang['certificate'] = 'The SAML auth certificate';
 $lang['lowercase'] = 'Treat user and group names as case insensitive and lower case them automatically?';
