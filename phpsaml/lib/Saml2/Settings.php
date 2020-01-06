@@ -26,7 +26,7 @@ class OneLogin_Saml2_Settings
      *
      * @var bool
      */
-    private $_strict = false;
+    private $_strict = true;
 
     /**
      * Activate debug mode
@@ -159,7 +159,7 @@ class OneLogin_Saml2_Settings
             'base' => $basePath,
             'config' => $basePath,
             'cert' => $basePath.'certs/',
-            'lib' => $basePath.'lib/',
+            'lib' => $basePath.'lib/Saml2/',
             'extlib' => $basePath.'extlib/'
         );
 
@@ -226,7 +226,21 @@ class OneLogin_Saml2_Settings
      */
     public function getSchemasPath()
     {
-        return $this->_paths['lib'].'schemas/';
+        if (isset($this->_paths['schemas'])) {
+            return $this->_paths['schemas'];
+        }
+        return __DIR__ . '/schemas/';
+    }
+
+    /**
+     * Set schemas path
+     *
+     * @param string $path
+     * @return $this
+     */
+    public function setSchemasPath($path)
+    {
+        $this->_paths['schemas'] = $path;
     }
 
     /**
@@ -288,7 +302,9 @@ class OneLogin_Saml2_Settings
      * Loads settings info from the settings file
      *
      * @return bool True if the settings info is valid
+     *
      * @throws OneLogin_Saml2_Error
+     *
      * @suppress PhanUndeclaredVariable
      */
     private function _loadSettingsFromFile()
@@ -381,6 +397,17 @@ class OneLogin_Saml2_Settings
         // Relax Destination validation
         if (!isset($this->_security['relaxDestinationValidation'])) {
             $this->_security['relaxDestinationValidation'] = false;
+        }
+
+
+        // Strict Destination match validation
+        if (!isset($this->_security['destinationStrictlyMatches'])) {
+            $this->_security['destinationStrictlyMatches'] = false;
+        }
+
+        // InResponseTo
+        if (!isset($this->_security['rejectUnsolicitedResponsesWithInResponseTo'])) {
+            $this->_security['rejectUnsolicitedResponsesWithInResponseTo'] = false;
         }
 
         // encrypt expected
@@ -529,6 +556,14 @@ class OneLogin_Saml2_Settings
                 $errors[] = 'idp_slo_url_invalid';
             }
 
+            if (isset($idp['singleLogoutService'])
+                && isset($idp['singleLogoutService']['responseUrl'])
+                && !empty($idp['singleLogoutService']['responseUrl'])
+                && !filter_var($idp['singleLogoutService']['responseUrl'], FILTER_VALIDATE_URL)
+            ) {
+                $errors[] = 'idp_slo_response_url_invalid';
+            }
+
             if (isset($settings['security'])) {
                 $security = $settings['security'];
 
@@ -599,8 +634,10 @@ class OneLogin_Saml2_Settings
             }
 
             if (isset($security['signMetadata']) && is_array($security['signMetadata'])) {
-                if (!isset($security['signMetadata']['keyFileName'])
-                    || !isset($security['signMetadata']['certFileName'])
+                if ((!isset($security['signMetadata']['keyFileName'])
+                    || !isset($security['signMetadata']['certFileName'])) &&
+                    (!isset($security['signMetadata']['privateKey'])
+                    || !isset($security['signMetadata']['x509cert']))
                 ) {
                     $errors[] = 'sp_signMetadata_invalid';
                 }
@@ -800,20 +837,28 @@ class OneLogin_Saml2_Settings
     /**
      * Gets the SP metadata. The XML representation.
      *
+     * @param bool $alwaysPublishEncryptionCert When 'true', the returned metadata
+     *   will always include an 'encryption' KeyDescriptor. Otherwise, the 'encryption'
+     *   KeyDescriptor will only be included if $advancedSettings['security']['wantNameIdEncrypted']
+     *   or $advancedSettings['security']['wantAssertionsEncrypted'] are enabled.
+     * @param DateTime|null $validUntil    Metadata's valid time
+     * @param int|null      $cacheDuration Duration of the cache in seconds
+     *
      * @return string  SP metadata (xml)
+     *
      * @throws Exception
      * @throws OneLogin_Saml2_Error
      */
-    public function getSPMetadata()
+    public function getSPMetadata($alwaysPublishEncryptionCert = false, $validUntil = null, $cacheDuration = null)
     {
-        $metadata = OneLogin_Saml2_Metadata::builder($this->_sp, $this->_security['authnRequestsSigned'], $this->_security['wantAssertionsSigned'], null, null, $this->getContacts(), $this->getOrganization());
+        $metadata = OneLogin_Saml2_Metadata::builder($this->_sp, $this->_security['authnRequestsSigned'], $this->_security['wantAssertionsSigned'], $validUntil, $cacheDuration, $this->getContacts(), $this->getOrganization());
 
         $certNew = $this->getSPcertNew();
         if (!empty($certNew)) {
             $metadata = OneLogin_Saml2_Metadata::addX509KeyDescriptors(
                 $metadata,
                 $certNew,
-                $this->_security['wantNameIdEncrypted'] || $this->_security['wantAssertionsEncrypted']
+                $alwaysPublishEncryptionCert || $this->_security['wantNameIdEncrypted'] || $this->_security['wantAssertionsEncrypted']
             );
         }
 
@@ -822,7 +867,7 @@ class OneLogin_Saml2_Settings
             $metadata = OneLogin_Saml2_Metadata::addX509KeyDescriptors(
                 $metadata,
                 $cert,
-                $this->_security['wantNameIdEncrypted'] || $this->_security['wantAssertionsEncrypted']
+                $alwaysPublishEncryptionCert || $this->_security['wantNameIdEncrypted'] || $this->_security['wantAssertionsEncrypted']
             );
         }
 
@@ -831,36 +876,24 @@ class OneLogin_Saml2_Settings
             if ($this->_security['signMetadata'] === true) {
                 $keyMetadata = $this->getSPkey();
                 $certMetadata = $cert;
-
                 if (!$keyMetadata) {
                     throw new OneLogin_Saml2_Error(
                         'SP Private key not found.',
                         OneLogin_Saml2_Error::PRIVATE_KEY_FILE_NOT_FOUND
                     );
                 }
-
                 if (!$certMetadata) {
                     throw new OneLogin_Saml2_Error(
                         'SP Public cert not found.',
                         OneLogin_Saml2_Error::PUBLIC_CERT_FILE_NOT_FOUND
                     );
                 }
-            } else {
-                if (!isset($this->_security['signMetadata']['keyFileName'])
-                    || !isset($this->_security['signMetadata']['certFileName'])
-                ) {
-                    throw new OneLogin_Saml2_Error(
-                        'Invalid Setting: signMetadata value of the sp is not valid',
-                        OneLogin_Saml2_Error::SETTINGS_INVALID_SYNTAX
-                    );
-                }
+            } else if (isset($this->_security['signMetadata']['keyFileName']) &&
+                isset($this->_security['signMetadata']['certFileName'])) {
                 $keyFileName = $this->_security['signMetadata']['keyFileName'];
                 $certFileName = $this->_security['signMetadata']['certFileName'];
-
                 $keyMetadataFile = $this->_paths['cert'].$keyFileName;
                 $certMetadataFile = $this->_paths['cert'].$certFileName;
-
-
                 if (!file_exists($keyMetadataFile)) {
                     throw new OneLogin_Saml2_Error(
                         'SP Private key file not found: %s',
@@ -868,7 +901,6 @@ class OneLogin_Saml2_Settings
                         array($keyMetadataFile)
                     );
                 }
-
                 if (!file_exists($certMetadataFile)) {
                     throw new OneLogin_Saml2_Error(
                         'SP Public cert file not found: %s',
@@ -878,6 +910,27 @@ class OneLogin_Saml2_Settings
                 }
                 $keyMetadata = file_get_contents($keyMetadataFile);
                 $certMetadata = file_get_contents($certMetadataFile);
+            } else if (isset($this->_security['signMetadata']['privateKey']) &&
+                isset($this->_security['signMetadata']['x509cert'])) {
+                $keyMetadata = OneLogin_Saml2_Utils::formatPrivateKey($this->_security['signMetadata']['privateKey']);
+                $certMetadata = OneLogin_Saml2_Utils::formatCert($this->_security['signMetadata']['x509cert']);
+                if (!$keyMetadata) {
+                    throw new OneLogin_Saml2_Error(
+                        'Private key not found.',
+                        OneLogin_Saml2_Error::PRIVATE_KEY_FILE_NOT_FOUND
+                    );
+                }
+                if (!$certMetadata) {
+                    throw new OneLogin_Saml2_Error(
+                        'Public cert not found.',
+                        OneLogin_Saml2_Error::PUBLIC_CERT_FILE_NOT_FOUND
+                    );
+                }
+            } else {
+                throw new OneLogin_Saml2_Error(
+                    'Invalid Setting: signMetadata value of the sp is not valid',
+                    OneLogin_Saml2_Error::SETTINGS_INVALID_SYNTAX
+                );
             }
 
             $signatureAlgorithm = $this->_security['signatureAlgorithm'];
@@ -893,13 +946,15 @@ class OneLogin_Saml2_Settings
      * @param string $xml Metadata's XML that will be validate
      *
      * @return Array The list of found errors
+     *
+     * @throws Exception
      */
     public function validateMetadata($xml)
     {
         assert('is_string($xml)');
 
         $errors = array();
-        $res = OneLogin_Saml2_Utils::validateXML($xml, 'saml-schema-metadata-2.0.xsd', $this->_debug);
+        $res = OneLogin_Saml2_Utils::validateXML($xml, 'saml-schema-metadata-2.0.xsd', $this->_debug, $this->getSchemasPath());
         if (!$res instanceof DOMDocument) {
             $errors[] = $res;
         } else {
@@ -1002,11 +1057,12 @@ class OneLogin_Saml2_Settings
      * Activates or deactivates the strict mode.
      *
      * @param bool $value Strict parameter
+     *
      * @throws Exception
      */
     public function setStrict($value)
     {
-        if (! (is_bool($value))) {
+        if (!is_bool($value)) {
             throw new Exception('Invalid value passed to setStrict()');
         }
 
@@ -1035,6 +1091,8 @@ class OneLogin_Saml2_Settings
 
     /**
      * Set a baseurl value.
+     *
+     * @param $baseurl
      */
     public function setBaseURL($baseurl)
     {
