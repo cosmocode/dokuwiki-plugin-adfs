@@ -40,6 +40,7 @@ class OneLogin_Saml2_IdPMetadataParser
                 throw new Exception(curl_error($ch), curl_errno($ch));
             }
         } catch (Exception $e) {
+            throw new Exception('Error on parseRemoteXML. '.$e->getMessage());
         }
         return $metadataInfo;
     }
@@ -68,6 +69,7 @@ class OneLogin_Saml2_IdPMetadataParser
                 $metadataInfo = self::parseXML($data, $entityId, $desiredNameIdFormat, $desiredSSOBinding, $desiredSLOBinding);
             }
         } catch (Exception $e) {
+            throw new Exception('Error on parseFileXML. '.$e->getMessage());
         }
         return $metadataInfo;
     }
@@ -85,7 +87,8 @@ class OneLogin_Saml2_IdPMetadataParser
      * @param string $desiredSLOBinding     Parse specific binding SLO endpoint.
      *
      * @return array metadata info in php-saml settings format
-     * @throws \Exception
+     *
+     * @throws Exception
      */
     public static function parseXML($xml, $entityId = null, $desiredNameIdFormat = null, $desiredSSOBinding = OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT, $desiredSLOBinding = OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT)
     {
@@ -141,6 +144,10 @@ class OneLogin_Saml2_IdPMetadataParser
                         'url' => $sloNodes->item(0)->getAttribute('Location'),
                         'binding' => $sloNodes->item(0)->getAttribute('Binding')
                     );
+
+                    if ($sloNodes->item(0)->hasAttribute('ResponseLocation')) {
+                        $metadataInfo['idp']['singleLogoutService']['responseUrl'] = $sloNodes->item(0)->getAttribute('ResponseLocation');
+                    }
                 }
 
                 $keyDescriptorCertSigningNodes = OneLogin_Saml2_Utils::query($dom, './md:KeyDescriptor[not(contains(@use, "encryption"))]/ds:KeyInfo/ds:X509Data/ds:X509Certificate', $idpDescriptor);
