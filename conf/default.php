@@ -5,6 +5,7 @@
 
 $conf['idPEntityID'] = 'set me';
 $conf['endpoint']  = '';
+$conf['slo_endpoint']  = '';
 $conf['certificate'] = '';
 $conf['lowercase'] = 1;
 $conf['autoprovisioning'] = 1;

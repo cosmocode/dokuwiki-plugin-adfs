@@ -67,6 +67,10 @@ class helper_plugin_adfs extends auth_plugin_authplain
                     'url' => $this->getConf('endpoint'),
                     'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
                 ],
+                'singleLogoutService' => [
+                    'url' => $this->getConf('slo_endpoint'),
+                    'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
+                ],                
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_UNSPECIFIED,
                 'x509cert' => $cert,
             ],

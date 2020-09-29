@@ -5,6 +5,7 @@
 
 $meta['idPEntityID'] = array('string');
 $meta['endpoint']    = array('string');
+$meta['slo_endpoint']    = array('string');
 $meta['certificate'] = array('');
 $meta['lowercase']   = array('onoff');
 $meta['autoprovisioning'] = array('onoff');

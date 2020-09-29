@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ADFS SAML authentication plugin
  *
@@ -23,13 +24,18 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
     public function handle_request(Doku_Event $event, $param)
     {
         $act = act_clean($event->data);
-        if ($act != 'adfs') return;
+        if ($act != 'adfs' && $act != 'logout') return;
         $event->preventDefault();
         $event->stopPropagation();
 
         /** @var helper_plugin_adfs $hlp */
         $hlp = plugin_load('helper', 'adfs');
         $saml = $hlp->getSamlLib();
+
+        if ($act == "logout") { 
+            auth_logoff();
+            $saml->logout();
+        }
 
         try {
             header('Content-Type: application/samlmetadata+xml');
@@ -57,5 +63,4 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
         $event->data = new Doku_Form(array());
         $event->data->addElement('<a href="' . wl($ID, array('do' => 'login')) . '">Login here</a>');
     }
-
 }
