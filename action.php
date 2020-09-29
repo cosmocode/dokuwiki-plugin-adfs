@@ -34,7 +34,12 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
 
         if ($act == "logout") { 
             auth_logoff();
-            $saml->logout();
+            if($this->getConf('use_slo')) {
+                $saml->logout();
+            } else {
+                send_redirect(wl($ID, array('do' => 'show'), true, '&'));
+            }
+            exit();
         }
 
         try {
