@@ -32,6 +32,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
     protected function createSettings()
     {
         global $conf;
+		$xml_wiki_title = htmlentities($conf['title']);
 
         $cert = $this->getConf('certificate');
         $cert = wordwrap($cert, 65, "\n", true);
@@ -53,7 +54,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
                     'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_POST,
                 ],
                 'attributeConsumingService' => [
-                    'serviceName' => $conf['title'],
+                    'serviceName' => $xml_wiki_title,
                     "serviceDescription" => 'ADFS auth plugin',
                     "requestedAttributes" => [],
                 ],
@@ -78,8 +79,8 @@ class helper_plugin_adfs extends auth_plugin_authplain
 
             'organization' => array(
                 'en-US' => array(
-                    'name' => $conf['title'],
-                    'displayname' => $conf['title'],
+                    'name' => $xml_wiki_title,
+                    'displayname' => $xml_wiki_title,
                     'url' => DOKU_URL
                 ),
             ),
