@@ -76,18 +76,18 @@ class auth_plugin_adfs extends auth_plugin_authplain
 
                     if ($this->getConf('autoprovisioning')) {
                         // In case of auto-provisionning we override the local DB info with those retrieve during the SAML negociation
-                        if (
-                            $this->triggerUserMod('modify', array(
-                                $USERINFO['user'],
-                                $USERINFO
-                            )) === false
-                        ) {
+                        if ( $this->getUserData($USERINFO['user']) === false ) {
                             $this->triggerUserMod('create', array(
                                 $USERINFO['user'],
                                 "\0\0nil\0\0",
                                 $USERINFO['name'],
                                 $USERINFO['mail'],
                                 $USERINFO['grps']
+                            ));
+                        } else {
+                            $this->triggerUserMod('modify', array(
+                                  $USERINFO['user'],
+                                  $USERINFO
                             ));
                         }
                     } else {
