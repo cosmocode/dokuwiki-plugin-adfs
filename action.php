@@ -32,13 +32,30 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
         $hlp = plugin_load('helper', 'adfs');
         $saml = $hlp->getSamlLib();
 
-        if ($act == "logout") { 
+        if ($act == "logout") {
+            /* By default, try to return to user to the page they were just viewing */
+            $redirTo = wl($ID, array('do' => 'show'), true, '&');
+
             auth_logoff();
-            if($this->getConf('use_slo')) {
-                $saml->logout();
-            } else {
-                send_redirect(wl($ID, array('do' => 'show'), true, '&'));
+
+            /* Proccess an SLO request or response */
+            if (isset($_GET["SAMLResponse"]) || isset($_GET["SAMLRequest"])) {
+                $saml->processSLO();
+                $errors = $saml->getErrors();
+
+                if (!empty($errors)) {
+                    msg('ADFS SLO:' . implode(', ', $errors), -1);
+                }
+
+                /* If a RelayState is defined in the Request, this is where we want to redirect to afterwards */
+                if (isset($_GET["RelayState"])) $redirTo = $_GET["RelayState"];
+
+                /* If user initiates logout from the wiki itself */
+            } else if ($this->getConf('use_slo')) {
+                $saml->logout($redirTo);
             }
+
+            send_redirect($redirTo);
             exit();
         }
 
