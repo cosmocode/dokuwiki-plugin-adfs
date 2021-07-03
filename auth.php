@@ -134,8 +134,29 @@ class auth_plugin_adfs extends auth_plugin_authplain
 
     /** @inheritdoc */
     public function logOff()
-    {
+    {   
+        
+        global $ID;                       
         set_doku_pref('adfs_autologin', 0);
+
+        if (empty($ID)) $ID = getID();     
+        $go = wl($ID, '', true, '&');
+        
+        // start implementation of SAML logout
+        if (!$this->getConf('use_slo') or empty($this->getConf('slo_endpoint'))) {     // slo is not configured fall back to disconnect only from dokuwiki
+            send_redirect($go);
+        } else {                             // prepare the request  
+           send_redirect($go);               // !!!! remove this line when slo is implemented
+           $url = $this->saml->logout(       // function defined in adfs/phpsaml/lib/Saml2/Auth-php !!!!
+                   null, // returnTo: is configured in our settings                           (let is as it is in login: impemented in own cookie for now)
+                   [],   // parameter: we do not send any additional paramters to ADFS        (none)
+                   null, // The NameID that will be set in the LogoutRequest.                 (set to null as starting point, should be change propably)                   
+                   null, // The SessionIndex (taken from the SAML Response in the SSO process)(set to null as starting point, should be changed))
+                   true, // stay: do not redirect, we do that ourselves                       (let it as is is in login)
+                   null, // The NameID Format will be set in the LogoutRequest.               (set to null, can stay like that probably) 
+                   null // The NameID NameQualifier will be set in the LogoutRequest.        (set to null, can stay like that probably)
+               );
+        }
     }
 
     /** @inheritdoc */
