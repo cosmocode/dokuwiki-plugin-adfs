@@ -54,7 +54,6 @@ class auth_plugin_adfs extends auth_plugin_authplain
         }
 
         if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || get_doku_pref('adfs_autologin', 0))) {
-#if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' )) {
             // Initiate SAML auth request
             $url = $this->saml->login(
                 null, // returnTo: is configured in our settings
