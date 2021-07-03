@@ -1,4 +1,5 @@
 <?php
+
 /**
  * ADFS SAML authentication plugin
  *
@@ -16,20 +17,48 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
 
     /**
      * Send the Federation Metadata about this Service Provider
-     *
+     * Otherwise, handle Logout for ADFS plugin
+     * 
      * @param Doku_Event $event
      * @param mixed $param
      */
     public function handle_request(Doku_Event $event, $param)
     {
         $act = act_clean($event->data);
-        if ($act != 'adfs') return;
+        if ($act != 'adfs' && $act != 'logout') return;
         $event->preventDefault();
         $event->stopPropagation();
 
         /** @var helper_plugin_adfs $hlp */
         $hlp = plugin_load('helper', 'adfs');
         $saml = $hlp->getSamlLib();
+
+        if ($act == "logout") {
+            /* By default, try to return to user to the page they were just viewing */
+            $redirTo = wl($ID, array('do' => 'show'), true, '&');
+
+            auth_logoff();
+
+            /* Proccess an SLO request or response */
+            if (isset($_GET["SAMLResponse"]) || isset($_GET["SAMLRequest"])) {
+                $saml->processSLO();
+                $errors = $saml->getErrors();
+
+                if (!empty($errors)) {
+                    msg('ADFS SLO: '. implode(', ', $errors) . '; ' . $saml->getLastErrorReason(), -1);
+                }
+
+                /* If a RelayState is defined in the Request, this is where we want to redirect to afterwards */
+                if (isset($_GET["RelayState"])) $redirTo = $_GET["RelayState"];
+
+                /* If user initiates logout from the wiki itself */
+            } else if ($this->getConf('use_slo')) {
+                $saml->logout($redirTo);
+            }
+
+            send_redirect($redirTo);
+            exit();
+        }
 
         try {
             header('Content-Type: application/samlmetadata+xml');
@@ -57,5 +86,4 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
         $event->data = new Doku_Form(array());
         $event->data->addElement('<a href="' . wl($ID, array('do' => 'login')) . '">Login here</a>');
     }
-
 }
