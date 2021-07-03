@@ -81,7 +81,8 @@ class helper_plugin_adfs extends auth_plugin_authplain
 
             'security' => [
                 'requestedAuthnContext' => false, // We let the AD decide what kind of authentication it uses
-                'wantNameId' => false // Seems not to work otherwise
+                'wantNameId' => false, // Seems not to work otherwise
+                'destinationStrictlyMatches' => false
             ],
 
             'organization' => array(

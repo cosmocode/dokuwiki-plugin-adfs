@@ -17,7 +17,8 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
 
     /**
      * Send the Federation Metadata about this Service Provider
-     *
+     * Otherwise, handle Logout for ADFS plugin
+     * 
      * @param Doku_Event $event
      * @param mixed $param
      */
@@ -44,7 +45,7 @@ class action_plugin_adfs extends DokuWiki_Action_Plugin
                 $errors = $saml->getErrors();
 
                 if (!empty($errors)) {
-                    msg('ADFS SLO:' . implode(', ', $errors), -1);
+                    msg('ADFS SLO: '. implode(', ', $errors) . '; ' . $saml->getLastErrorReason(), -1);
                 }
 
                 /* If a RelayState is defined in the Request, this is where we want to redirect to afterwards */
