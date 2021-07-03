@@ -58,7 +58,8 @@ class helper_plugin_adfs extends auth_plugin_authplain
                     "requestedAttributes" => [],
                 ],
                 'singleLogoutService' => [
-                    'url' => wl('', array('do' => 'logout'), true, '&'),
+                    //'url' => wl('', array('do' => 'logout'), true, '&'), // Seems wrong to me (Bonomani)
+                    //'url' => DOKU_URL . DOKU_SCRIPT,                     // something like that better
                     'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
                 ],
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_EMAIL_ADDRESS,
@@ -81,8 +82,7 @@ class helper_plugin_adfs extends auth_plugin_authplain
 
             'security' => [
                 'requestedAuthnContext' => false, // We let the AD decide what kind of authentication it uses
-                'wantNameId' => false, // Seems not to work otherwise
-                'destinationStrictlyMatches' => false
+                'wantNameId' => false // Seems not to work otherwise
             ],
 
             'organization' => array(
