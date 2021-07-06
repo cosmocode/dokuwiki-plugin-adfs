@@ -56,10 +56,10 @@ class auth_plugin_adfs extends auth_plugin_authplain
             return true;
         } else {
             $autoLoginConf = $this->getConf("auto_login");
-			$autoLogin = ($autoLoginConf == "never") ? false : (
-				($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 1)) || 
-				($autoLoginConf == "always"));
-		}
+            $autoLogin = ($autoLoginConf == "never") ? false : (
+                ($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 1)) || 
+                ($autoLoginConf == "always"));
+        }
 
         if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || $autoLogin)) {
             // Initiate SAML auth request
