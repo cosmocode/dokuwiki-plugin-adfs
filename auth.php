@@ -41,7 +41,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
         global $ACT;
 
         $autoLogin = false;
-        
+
         if (empty($ID)) $ID = getID();
 
         // trust session info, no need to recheck
@@ -55,9 +55,10 @@ class auth_plugin_adfs extends auth_plugin_authplain
 
             return true;
         } else {
-			$autoLogin = ($this->getConf("auto_login") == "never") ? false : (
-				($this->getConf("auto_login") == "after login" && get_doku_pref('adfs_autologin', 1)) || 
-				($this->getConf("auto_login") == "always"));
+            $autoLoginConf = $this->getConf("auto_login");
+			$autoLogin = ($autoLoginConf == "never") ? false : (
+				($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 1)) || 
+				($autoLoginConf == "always"));
 		}
 
         if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || $autoLogin)) {
