@@ -35,7 +35,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
      * If not logged in, redirects to SAML provider
      */
     public function trustExternal($user, $pass, $sticky = false)
-    {
+    {	
         global $USERINFO;
         global $ID;
         global $ACT;
@@ -51,7 +51,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
             $USERINFO = $_SESSION[DOKU_COOKIE]['auth']['info'];
 
             return true;
-        }
+        } 
 
         if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || get_doku_pref('adfs_autologin', 0))) {
             // Initiate SAML auth request
@@ -76,18 +76,18 @@ class auth_plugin_adfs extends auth_plugin_authplain
 
                     if ($this->getConf('autoprovisioning')) {
                         // In case of auto-provisionning we override the local DB info with those retrieve during the SAML negociation
-                        if (
-                            $this->triggerUserMod('modify', array(
-                                $USERINFO['user'],
-                                $USERINFO
-                            )) === false
-                        ) {
+                        if ( $this->getUserData($USERINFO['user']) === false ) {
                             $this->triggerUserMod('create', array(
                                 $USERINFO['user'],
                                 "\0\0nil\0\0",
                                 $USERINFO['name'],
                                 $USERINFO['mail'],
                                 $USERINFO['grps']
+                            ));
+                        } else {
+                            $this->triggerUserMod('modify', array(
+                                  $USERINFO['user'],
+                                  $USERINFO
                             ));
                         }
                     } else {
@@ -135,7 +135,34 @@ class auth_plugin_adfs extends auth_plugin_authplain
     /** @inheritdoc */
     public function logOff()
     {
+		global $ID;
         set_doku_pref('adfs_autologin', 0);
+		
+		$hlp = plugin_load('helper', 'adfs');
+		$saml = $hlp->getSamlLib();
+		
+		/* By default, try to return to user to the page they were just viewing */
+		$redirTo = wl($ID, '', true, '&');
+
+		/* Proccess an SLO request or response */
+		if(isset($_GET["SAMLResponse"]) || isset($_GET["SAMLRequest"])) {
+			$saml->processSLO();
+			$errors = $saml->getErrors();
+
+			if (!empty($errors)) {
+				  msg('ADFS SLO: '. implode(', ', $errors) . '; ' . $saml->getLastErrorReason(), -1);
+			}
+			
+			/* If a RelayState is defined in the Request, this is where we want to redirect to afterwards */            
+			if(isset($_GET["RelayState"])) $redirTo = $_GET["RelayState"];
+		
+		/* If user initiates logout from the wiki itself */
+		} else if($this->getConf('use_slo')) {
+			$saml->logout($redirTo);
+		} 
+
+		/* Manually redirect user if we ever get here */
+		send_redirect($redirTo);
     }
 
     /** @inheritdoc */
