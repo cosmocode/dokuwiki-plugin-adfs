@@ -58,6 +58,10 @@ class helper_plugin_adfs extends auth_plugin_authplain
                     "serviceDescription" => 'ADFS auth plugin',
                     "requestedAttributes" => [],
                 ],
+                'singleLogoutService' => [
+                    'url' => wl('', array('do' => 'logout'), true, '&'),
+                    'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
+                ],
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_EMAIL_ADDRESS,
             ],
 
@@ -68,13 +72,18 @@ class helper_plugin_adfs extends auth_plugin_authplain
                     'url' => $this->getConf('endpoint'),
                     'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
                 ],
+                'singleLogoutService' => [
+                    'url' => $this->getConf('slo_endpoint'),
+                    'binding' => OneLogin_Saml2_Constants::BINDING_HTTP_REDIRECT,
+                ],                
                 'NameIDFormat' => OneLogin_Saml2_Constants::NAMEID_UNSPECIFIED,
                 'x509cert' => $cert,
             ],
 
             'security' => [
                 'requestedAuthnContext' => false, // We let the AD decide what kind of authentication it uses
-                'wantNameId' => false // Seems not to work otherwise
+                'wantNameId' => false, // Seems not to work otherwise
+                'destinationStrictlyMatches' => false
             ],
 
             'organization' => array(
