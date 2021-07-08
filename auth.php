@@ -39,6 +39,9 @@ class auth_plugin_adfs extends auth_plugin_authplain
         global $USERINFO;
         global $ID;
         global $ACT;
+
+        $autoLogin = false;
+
         if (empty($ID)) $ID = getID();
 
         // trust session info, no need to recheck
@@ -51,9 +54,14 @@ class auth_plugin_adfs extends auth_plugin_authplain
             $USERINFO = $_SESSION[DOKU_COOKIE]['auth']['info'];
 
             return true;
+        } else {
+            $autoLoginConf = $this->getConf("auto_login");
+            $autoLogin = ($autoLoginConf == "never") ? false : (
+                ($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 0)) || 
+                ($autoLoginConf == "always"));
         }
 
-        if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || get_doku_pref('adfs_autologin', 0))) {
+        if (!isset($_POST['SAMLResponse']) && ($ACT == 'login' || $autoLogin)) {
             // Initiate SAML auth request
             $url = $this->saml->login(
                 null, // returnTo: is configured in our settings
