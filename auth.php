@@ -57,7 +57,7 @@ class auth_plugin_adfs extends auth_plugin_authplain
         } else {
             $autoLoginConf = $this->getConf("auto_login");
             $autoLogin = ($autoLoginConf == "never") ? false : (
-                ($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 1)) || 
+                ($autoLoginConf == "after login" && get_doku_pref('adfs_autologin', 0)) || 
                 ($autoLoginConf == "always"));
         }
 
