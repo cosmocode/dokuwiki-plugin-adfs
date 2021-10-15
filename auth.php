@@ -76,6 +76,17 @@ class auth_plugin_adfs extends auth_plugin_authplain
 
                     if ($this->getConf('autoprovisioning')) {
                         // In case of auto-provisionning we override the local DB info with those retrieve during the SAML negociation
+
+                        // First of all protect existing user from having its group beeing overriden in case group was not requested to the ADFS
+                        if ($this->getConf('groups_attr_name') == "") {
+                            $dbUserInfo = $this->getUserData($USERINFO['user']);
+                            if(is_array($dbUserInfo) === true)
+                            {
+                                // Do not override group
+                                $USERINFO['grps'] = $dbUserInfo["grps"];
+                            }
+                        }
+
                         if (
                             $this->triggerUserMod('modify', array(
                                 $USERINFO['user'],
